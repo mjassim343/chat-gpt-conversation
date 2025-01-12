@@ -20,6 +20,7 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  background-color: #ddd;
 }
 
 #app {
@@ -32,7 +33,7 @@ body {
   max-height: 800px;
   color: var(--text-primary);
   border: 1px solid var(--border-secondary);
-  /*box-shadow: 0 5px 10px var(--shadow);*/
+  box-shadow: 0 5px 10px var(--shadow);
   background-color: var(--bg-primary);
   overflow: hidden;
 }
@@ -54,6 +55,12 @@ body {
 .header-content {
   text-align: center;
   line-height: 1;
+  display: flex;
+  justify-content: center;
+}
+.header-content img{
+  height: 25px;
+  margin-right: 5px;
 }
 .header-icon {
   display: inline-flex;
@@ -110,11 +117,35 @@ body {
   color: var(--text-primary);
   background-color: var(--border-secondary);
 }
+
+.timestamp-left{
+  float:left;
+  font-size:12px;
+}
+
 .chat-item.bubble.user {
   align-self: flex-end;
   color: var(--highlight);
   background-color: var(--theme-color);
 }
+
+.timestamp-right{
+  float:right;
+  font-size:12px;
+}
+
+.group-title
+{
+  display: inline-block;
+  margin-top: 20px;
+  padding: 5px 20px;
+  border-radius: 15px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background-color: #f0f0f0;
+}
+
 .chat-item p {
   margin: .2rem 0;
   word-break: break-word;
