@@ -1,46 +1,86 @@
 <?php
 
 namespace App\Services;
+use Illuminate\Support\Facades\Log;
+use GuzzleHttp\Client;
+use Exception;
 
 class ChatGPTService
 {
-    public function convertToHtml($text)
+    protected $apiUrl;
+    protected $model;
+    protected $stream;
+    protected $temperature;
+    protected $token;
+
+    public function __construct()
     {
-        // Escape special HTML characters to prevent XSS attacks
-        $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        $this->apiUrl = 'https://api.openai.com/v1/chat/completions';
+        $this->model = 'gpt-4o-mini';
+        $this->stream = true;
+        $this->temperature = 0.7;
+        $this->token = 2048;
+    }
 
-        // Match and format numbered items into an HTML list
-        $text = preg_replace_callback(
-            '/(\d+)\.\s(.*?):(.*?)(\n|$)/',
-            function ($matches) {
-                $number = $matches[1];   
-                $title = $matches[2];
-                $description = trim($matches[3]);
-                return "<p></p><strong>$number. $title:</strong> $description</p>";
-            },
-            $text
-        );
+    public function sendMessage(string $message)
+    {
+        try 
+        {
+            $client = new Client();
 
-        // Convert bold text (Markdown style: **text**)
-        $text = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $text);
+            $headers = 
+            [
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . env('CHATGPT_API_KEY'),
+            ];
+            
+            $body = 
+            [
+                'model' => $this->model,
+                'messages' => [['role' => 'user', 'content' => $message]],
+                "temperature" => $this->temperature,
+                "max_tokens" => $this->token
+            ];
 
-        // Convert headers (Markdown style: ### text)
-        $text = preg_replace('/^###\s(.*)$/m', '<h3>$1</h3>', $text);
+            $response = $client->post($this->apiUrl, 
+            [
+                'headers' => $headers, 
+                'json' => $body,
+                "stream" => $this->stream,
+            ]);
 
-        // Preserve numbered sections without wrapping in list tags (e.g., 1. Item)
-        $text = preg_replace('/(\d+\.)\s(.*?)(?=\n\d+\.\s|$)/', '<p>$1 $2</p>', $text);
+            $body = $response->getBody();
 
-        // Convert unordered list items (e.g., - Item)
-        $text = preg_replace_callback('/(?:^|\n)-\s(.*?)(?=\n-|$)/s', function ($matches) {
-            return "<li>{$matches[1]}</li>";
-        }, $text);
+            $chunk ='';
+            while (!$body->eof()) 
+            {
+                $chunk .= $body->read(1024); // Reading the stream in chunks
+            }
 
-        // Wrap unordered list items in <ul> tags
-        $text = preg_replace('/(<li>.*<\/li>)/s', '<ul>$1</ul>', $text);
+            // Decode the chunk to check for content
+            $result = json_decode($chunk, true);
 
-        // Remove extra newlines
-        $text = preg_replace('/\n+/', '', $text);
+            // Check for errors in the API response
+            if (isset($result['error'])) 
+            {
+                return "ChatGPT API Error: " . $result['error']['message'];
+            }
 
-        return $text;
+            // Check for the expected response
+            if (isset($result['choices'][0]['message']['content'])) 
+            {
+                $chatGPTResponse = $result['choices'][0]['message']['content'];
+            }
+
+            return $chatGPTResponse;
+        }
+        catch (Exception $e) 
+        {
+            // Log exception error
+            Log::error('ChatGPT Exception:', ['exception' => $e->getMessage()]);
+            
+            // Handle exception error
+            return "Chat GPT Limit Reached. ". $e->getMessage();
+        }
     }
 }
