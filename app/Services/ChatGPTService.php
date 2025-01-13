@@ -8,6 +8,7 @@ use Exception;
 class ChatGPTService
 {
     protected $apiUrl;
+    protected $apiKey;
     protected $model;
     protected $stream;
     protected $temperature;
@@ -16,6 +17,7 @@ class ChatGPTService
     public function __construct()
     {
         $this->apiUrl = 'https://api.openai.com/v1/chat/completions';
+        $this->apiKey = env('CHATGPT_API_KEY');
         $this->model = 'gpt-4o-mini';
         $this->stream = true;
         $this->temperature = 0.7;
@@ -31,7 +33,7 @@ class ChatGPTService
             $headers = 
             [
                 'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . env('CHATGPT_API_KEY'),
+                'Authorization' => 'Bearer '.$this->apiKey,
             ];
             
             $body = 
