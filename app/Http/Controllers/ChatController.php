@@ -35,29 +35,30 @@ class ChatController extends Controller
     {
         $conversations = Conversation::all();
 
+        // Format the date as "today", "yesterday", or the specific date
         $groupedConversations = $conversations->groupBy(function ($conversation)
         {
-            // Format the date as "today", "yesterday", or the specific date
             $createdAt = \Carbon\Carbon::parse($conversation->created_at);
 
-            if($createdAt->isToday()) 
+            if($createdAt->isToday())
             {
                 return 'Today';
             } 
             elseif($createdAt->isYesterday()) 
             {
                 return 'Yesterday';
-            } 
+            }
             else 
             {
-                return $createdAt->toFormattedDateString();
+                return $createdAt->format('M d, Y');
             }
         });
 
         // Convert each conversation's response to HTML
         $groupedConversations = $groupedConversations->map(function ($conversations) 
         {
-            return $conversations->transform(function ($conversation) {
+            return $conversations->transform(function ($conversation) 
+            {
                 $conversation->response = $this->chatGPTService->convertToHtml($conversation->response);
                 return $conversation;
             });
@@ -94,9 +95,6 @@ class ChatController extends Controller
                 "temperature" => $this->temperature,
                 "max_tokens" => $this->token
             ];
-
-            // Log request details
-            Log::info('Request Body:', $body);
 
             $response = $client->post($this->apiUrl, 
             [
@@ -139,7 +137,9 @@ class ChatController extends Controller
         }
         catch (Exception $e) 
         {
+            // Log exception error
             Log::error('ChatGPT Exception:', ['exception' => $e->getMessage()]);
+            
             // Handle exception error
             return "Chat GPT Limit Reached. ". $e->getMessage();
         }
