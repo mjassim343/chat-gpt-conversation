@@ -24,7 +24,7 @@ class ChatGPTService
         $this->token = 2048;
     }
 
-    public function sendMessage(string $message)
+    public function sendMessage(array $messages)
     {
         try 
         {
@@ -39,7 +39,7 @@ class ChatGPTService
             $body = 
             [
                 'model' => $this->model,
-                'messages' => [['role' => 'user', 'content' => $message]],
+                'messages' => $messages,
                 "temperature" => $this->temperature,
                 "max_tokens" => $this->token
             ];

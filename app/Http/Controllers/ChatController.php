@@ -65,7 +65,23 @@ class ChatController extends Controller
 
         $userMessage = $request->input('message');
 
-        $chatGPTResponse = $this->chatGPTService->sendMessage($userMessage);
+        // Fetch previous messages from the database
+        $previousConversations = Conversation::orderBy('created_at', 'asc')->get();
+
+        // Format the conversation in array
+        $messages = $previousConversations->map(function ($conversation) 
+        {
+            return [
+                ['role' => 'user', 'content' => $conversation->message],
+                ['role' => 'assistant', 'content' => $conversation->response]
+            ];
+        })->flatten(1)->toArray();
+
+        // Add new user message to the conversation
+        $messages[] = ['role' => 'user', 'content' => $userMessage];
+
+        // Get the response from chatGPT
+        $chatGPTResponse = $this->chatGPTService->sendMessage($messages);
 
          // Save to the database
          Conversation::create([
@@ -92,7 +108,7 @@ class ChatController extends Controller
                 $number = $matches[1];   
                 $title = $matches[2];
                 $description = trim($matches[3]);
-                return "<p></p><strong>$number. $title:</strong> $description</p>";
+                return "<p><strong>$number. $title:</strong> $description</p>";
             },
             $text
         );
